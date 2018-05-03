@@ -2,14 +2,48 @@
 #      environment configuration  #
 #---------------------------------#
 version: 1.9.{build}.0
+configuration:
+    - CORE
+    - WMF
 install:
+    - ps: iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
     - git clone https://github.com/PowerShell/DscResource.Tests
-
+    - ps: |
+        # Download and install latest PowerShell Core version.
+        $msiPath = "$env:TEMP\PowerShellCore.msi"
+        (New-Object Net.WebClient).DownloadFile('https://github.com/PowerShell/PowerShell/releases/download/v6.0.2/PowerShell-6.0.2-win-x64.msi', $msiPath)
+        Write-Verbose 'Installing PowerShell Core' -Verbose
+        Start-Process 'msiexec.exe' -Wait -ArgumentList "/i $msiPath /quiet"
+        Remove-Item $msiPath
+        # Must add this path $env:Path so that 'pwsh:' finds 'pwsh'.
+        $env:Path = "$env:ProgramFiles\PowerShell\6.0.2;$env:Path"
+    - pwsh: |
+        Write-Verbose -Message "PowerShell Core v$($PSVersionTable.PSVersion)" -Verbose
+        if ($PSVersionTable.PSVersion -lt [Version] '6.0.2')
+        {
+            throw 'Wrong PowerShell Core version installed.'
+        }
+    - ps: |
+        Write-Verbose -Message "Windows PowerShell v$($PSVersionTable.PSVersion)" -Verbose
+        if ($PSVersionTable.PSVersion -lt [Version] '5.1')
+        {
+            throw 'WMF 5.1 needed'
+        }
     - ps: |
         $moduleName = 'ComputerManagementDsc'
         $mainModuleFolder = "Modules\$moduleName"
         Import-Module "$env:APPVEYOR_BUILD_FOLDER\DscResource.Tests\AppVeyor.psm1"
-        Invoke-AppveyorInstallTask -PesterMaximumVersion 4.0.8
+        # Installs Nuget Package Provider and Pester for Windows PowerShell
+        # Nuget Package Provider can only be installed on WMF.
+        Invoke-AppveyorInstallTask
+    - pwsh: |
+        $moduleName = 'ComputerManagementDsc'
+        $mainModuleFolder = "Modules\$moduleName"
+        Import-Module "$env:APPVEYOR_BUILD_FOLDER\DscResource.Tests\AppVeyor.psm1"
+        # Installs Pester in PowerShell Core.
+        # This function will ignore installing Package Provider when
+        # edition is CORE (see above).
+        Invoke-AppveyorInstallTask
 
 #---------------------------------#
 #      build configuration        #
@@ -21,9 +55,34 @@ build: false
 #      test configuration         #
 #---------------------------------#
 
-test_script:
+for:
+-
+  matrix:
+    only:
+      - configuration: CORE
+
+  test_script:
+    - pwsh: |
+        $moduleName = 'ComputerManagementDsc'
+        $mainModuleFolder = "Modules\$moduleName"
+        # Must load the module here again, because each pwsh started has it's own session.
+        Import-Module "$env:APPVEYOR_BUILD_FOLDER\DscResource.Tests\AppVeyor.psm1"
+        Invoke-AppveyorTestScriptTask `
+            -Type 'Harness' `
+            -MainModulePath $mainModuleFolder `
+            -CodeCoverage `
+            -CodeCovIo
+
+-
+  matrix:
+    only:
+      - configuration: WMF
+
+  test_script:
     - ps: |
-          Invoke-AppveyorTestScriptTask `
+        $moduleName = 'ComputerManagementDsc'
+        $mainModuleFolder = "Modules\$moduleName"
+        Invoke-AppveyorTestScriptTask `
             -Type 'Harness' `
             -MainModulePath $mainModuleFolder `
             -CodeCoverage `
@@ -36,6 +95,8 @@ test_script:
 # scripts to run before deployment
 deploy_script:
     - ps: |
+        $moduleName = 'ComputerManagementDsc'
+        $mainModuleFolder = "Modules\$moduleName"
         Invoke-AppveyorAfterTestTask `
             -Type 'Wiki' `
             -MainModulePath $mainModuleFolder `
