@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Changes to ComputerManagementDsc
+  - Added new resource
+    - SmbShare (moved and improved from deprecated module xSmbShare).
+  - Common helpers
+    - Updated Test-DscParameterState so it now can compare zero item
+      collections (arrays).
 - PowerPlan:
   - Added support to specify the desired power plan either as name or guid.
     Fixes [Issue #59](https://github.com/PowerShell/ComputerManagementDsc/issues/59)
