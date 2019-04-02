@@ -217,29 +217,58 @@ try
                         }
                     }
 
-                    It 'Should call the correct mocks' {
-                        $setTargetResourceParameters = @{
-                            Name = $mockShareName
-                            Path = 'TestDrive:\Temp'
-                            Description = 'Some description'
-                            ConcurrentUserLimit = 2
-                            EncryptData = $false
-                            FolderEnumerationMode = 'AccessBased'
-                            CachingMode = 'Manual'
-                            ContinuouslyAvailable = $true
-                            ChangeAccess = $mockChangePermissionUserName
-                            ReadAccess = $mockReadPermissionUserName
-                            FullAccess = $mockFullPermissionUserName
-                            # Testing removal of empty collections
-                            NoAccess = @()
-                            Verbose = $true
+                    Context 'When no access permission is given' {
+                        It 'Should call the correct mocks' {
+                            $setTargetResourceParameters = @{
+                                Name = $mockShareName
+                                Path = 'TestDrive:\Temp'
+                                Description = 'Some description'
+                                ConcurrentUserLimit = 2
+                                EncryptData = $false
+                                FolderEnumerationMode = 'AccessBased'
+                                CachingMode = 'Manual'
+                                ContinuouslyAvailable = $true
+                                ChangeAccess = @()
+                                ReadAccess = @()
+                                FullAccess = @()
+                                NoAccess = @()
+                                Verbose = $true
+                            }
+
+                            { Set-TargetResource @setTargetResourceParameters } | Should -Not -Throw
+
+                            Assert-MockCalled New-SmbShare -Exactly -Times 1 -Scope It
+                            Assert-MockCalled Set-SmbShare -Exactly -Times 0 -Scope It
+                            Assert-MockCalled Remove-SmbShare -Exactly -Times 0 -Scope It
+                            Assert-MockCalled Remove-SmbShareAccessPermission -Exactly -Times 1 -Scope It
                         }
+                    }
 
-                        { Set-TargetResource @setTargetResourceParameters } | Should -Not -Throw
+                    Context 'When access permissions are given' {
+                        It 'Should call the correct mocks' {
+                            $setTargetResourceParameters = @{
+                                Name = $mockShareName
+                                Path = 'TestDrive:\Temp'
+                                Description = 'Some description'
+                                ConcurrentUserLimit = 2
+                                EncryptData = $false
+                                FolderEnumerationMode = 'AccessBased'
+                                CachingMode = 'Manual'
+                                ContinuouslyAvailable = $true
+                                ChangeAccess = $mockChangePermissionUserName
+                                ReadAccess = $mockReadPermissionUserName
+                                FullAccess = $mockFullPermissionUserName
+                                NoAccess = $mockNoPermissionUserName
+                                Verbose = $true
+                            }
 
-                        Assert-MockCalled New-SmbShare -Exactly -Times 1 -Scope It
-                        Assert-MockCalled Set-SmbShare -Exactly -Times 0 -Scope It
-                        Assert-MockCalled Remove-SmbShare -Exactly -Times 0 -Scope It
+                            { Set-TargetResource @setTargetResourceParameters } | Should -Not -Throw
+
+                            Assert-MockCalled New-SmbShare -Exactly -Times 1 -Scope It
+                            Assert-MockCalled Set-SmbShare -Exactly -Times 0 -Scope It
+                            Assert-MockCalled Remove-SmbShare -Exactly -Times 0 -Scope It
+                            Assert-MockCalled Remove-SmbShareAccessPermission -Exactly -Times 0 -Scope It
+                        }
                     }
                 }
 

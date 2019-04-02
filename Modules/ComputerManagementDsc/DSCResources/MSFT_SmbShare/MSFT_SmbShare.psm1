@@ -58,11 +58,12 @@ function Get-TargetResource
         ShareType             = $null
         ShadowCopy            = $false
         Special               = $false
-        ChangeAccess          = @()
-        ReadAccess            = @()
-        FullAccess            = @()
-        NoAccess              = @()
     }
+
+    $accountsFullAccess   = [system.string[]] @()
+    $accountsChangeAccess = [system.string[]] @()
+    $accountsReadAccess   = [system.string[]] @()
+    $accountsNoAccess     = [system.string[]] @()
 
     $smbShare = Get-SmbShare -Name $Name -ErrorAction 'SilentlyContinue'
     if ($smbShare)
@@ -90,7 +91,7 @@ function Get-TargetResource
                 {
                     if ($access.AccessControlType -eq 'Allow')
                     {
-                        $returnValue['ChangeAccess'] += @($access.AccountName)
+                        $accountsChangeAccess += @($access.AccountName)
                     }
                 }
 
@@ -98,7 +99,7 @@ function Get-TargetResource
                 {
                     if ($access.AccessControlType -eq 'Allow')
                     {
-                        $returnValue['ReadAccess'] += @($access.AccountName)
+                        $accountsReadAccess += @($access.AccountName)
                     }
                 }
 
@@ -106,12 +107,12 @@ function Get-TargetResource
                 {
                     if ($access.AccessControlType -eq 'Allow')
                     {
-                        $returnValue['FullAccess'] += @($access.AccountName)
+                        $accountsFullAccess += @($access.AccountName)
                     }
 
                     if ($access.AccessControlType -eq 'Deny')
                     {
-                        $returnValue['NoAccess'] += @($access.AccountName)
+                        $accountsNoAccess += @($access.AccountName)
                     }
                 }
             }
@@ -121,6 +122,15 @@ function Get-TargetResource
     {
         Write-Verbose -Message ($script:localizedData.ShareNotFound -f $Name)
     }
+
+    <#
+        This adds either an empty array, or a populated array depending
+        if accounts with the respectively access was found.
+    #>
+    $returnValue['FullAccess'] = [System.String[]] $accountsFullAccess
+    $returnValue['ChangeAccess'] = [System.String[]] $accountsChangeAccess
+    $returnValue['ReadAccess'] = [System.String[]] $accountsReadAccess
+    $returnValue['NoAccess'] = [System.String[]] $accountsNoAccess
 
     return $returnValue
 }
@@ -309,8 +319,9 @@ function Set-TargetResource
             Write-Verbose -Message ($script:localizedData.CreateShare -f $Name)
 
             <#
-                Remove access collections that are empty, since that is
-                already the default for the cmdlet New-SmbShare.
+                Remove access collections that are empty, since empty
+                collections are not allowed to be provided to the cmdlet
+                New-SmbShare.
             #>
             foreach ($accessProperty in ('ChangeAccess','ReadAccess','FullAccess','NoAccess'))
             {
@@ -321,6 +332,19 @@ function Set-TargetResource
             }
 
             New-SmbShare @smbShareParameters -ErrorAction 'Stop'
+
+            <#
+                The group 'Everyone' is automatically given read access by
+                the cmdlet New-SmbShare, if ReadAccess is set to @().
+
+                if ReadAccess was specified in the configuration, and if
+                ReadAccess is set to @(), then this removes that access
+                permission,
+            #>
+            if ($PSBoundParameters.ContainsKey('ReadAccess') -and -not $ReadAccess)
+            {
+                Remove-SmbShareAccessPermission -Name $Name -ReadAccess $ReadAccess
+            }
         }
     }
 }
