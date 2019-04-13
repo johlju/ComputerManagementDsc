@@ -28,6 +28,9 @@ else
                 ShareName2      = 'DscTestShare2'
                 SharePath2      = 'C:\DscTestShare2'
 
+                ShareName3      = 'DscTestShare3'
+                SharePath3      = ('{0}:\DscTestShare3' -f $freeDriveLetter)
+
                 UserName1       = ('{0}\SmbUser1' -f $env:COMPUTERNAME)
                 UserName2       = ('{0}\SmbUser2' -f $env:COMPUTERNAME)
                 UserName3       = ('{0}\SmbUser3' -f $env:COMPUTERNAME)
@@ -36,6 +39,9 @@ else
 
                 VirtualDiskName = 'TestDrive:\SmbShareDisk.vhdx'
                 DriveLetter     = $freeDriveLetter
+
+                # This will be updated to correct disk number when the test is run.
+                DiskNumber      = 9999
             }
         )
     }
@@ -49,7 +55,6 @@ else
 Configuration MSFT_SmbShare_Prerequisites_Config
 {
     Import-DscResource -ModuleName 'PSDscResources'
-    Import-DscResource -ModuleName 'xHyper-V'
     Import-DscResource -ModuleName 'StorageDsc'
 
     node $AllNodes.NodeName
@@ -116,27 +121,19 @@ Configuration MSFT_SmbShare_Prerequisites_Config
             )
         }
 
-        xVhd 'CreateSmbShareVirtualDisk'
+        WaitForDisk 'WaitSmbShareVirtualDisk'
         {
-            Ensure           = 'Present'
-            Name             = Split-Path -Path $Node.VirtualDiskName -Leaf
-            Path             = Split-Path -Path $Node.VirtualDiskName -Parent
-            Generation       = 'vhdx'
-            Type             = 'Dynamic'
-            MaximumSizeBytes = 100
+             DiskId = $Node.DiskNumber
+             RetryIntervalSec = 60
+             RetryCount = 60
         }
 
-        MountImage 'MountSmbShareVirtualDisk'
+        Disk 'SmbShareVirtualDiskPartition'
         {
-            ImagePath   = $Node.VirtualDiskName
-            DriveLetter = $Node.DriveLetter
-        }
+             DiskId = $Node.DiskNumber
+             DriveLetter = $Node.DriveLetter
 
-        WaitForVolume 'WaitSmbShareVirtualDisk'
-        {
-            DriveLetter      = $Node.DriveLetter
-            RetryIntervalSec = 5
-            RetryCount       = 10
+             DependsOn = '[WaitForDisk]WaitSmbShareVirtualDisk'
         }
     }
 }

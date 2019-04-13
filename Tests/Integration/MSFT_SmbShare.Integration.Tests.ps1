@@ -23,14 +23,33 @@ $TestEnvironment = Initialize-TestEnvironment `
     -TestType Integration
 #endregion
 
-$script:dscResourceFriendlyName = 'SmbShare'
-$script:dcsResourceName = "MSFT_$($script:dscResourceFriendlyName)"
-
 #region Integration Tests
 $configurationFile = Join-Path -Path $PSScriptRoot -ChildPath "$($script:dcsResourceName).config.ps1"
 . $configurationFile
 
 Describe "$($script:dcsResourceName)_Integration" {
+    BeforeAll {
+        <#
+            We can't use the resource xVhd (xHyper-V) to create the VHDX file,
+            because when we mount it, there is no way of knowing an identifier
+            of the disk (e.g. disk number or the unique identifier) that is
+            needed for the resources WaitForDisk and Disk that are used to
+            create the partition.
+        #>
+        $newVhdResult = New-VHD -Path $ConfigurationData.AllNodes[0].VirtualDiskName -SizeBytes '100MB' -Dynamic
+        $mountVhdResult = Mount-VHD $newVhdResult.Path -PassThru
+        $ConfigurationData.AllNodes[0]['DiskNumber'] = $mountVhdResult.DiskNumber
+    }
+
+    AfterAll {
+        <#
+            Only need to dismount the VHDX since it was created on the
+            TestDrive:\ and will be automatically cleaned.
+        #>
+        Dismount-VHD -DiskNumber $ConfigurationData.AllNodes[0]['DiskNumber']
+    }
+
+
     $configurationName = "$($script:dcsResourceName)_Prerequisites_Config"
 
     Context ('When using configuration {0}' -f $configurationName) {
