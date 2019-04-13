@@ -116,7 +116,7 @@ Configuration MSFT_SmbShare_Prerequisites_Config
             )
         }
 
-        xVhd 'CreateSmbSHareVirtualDisk'
+        xVhd 'CreateSmbShareVirtualDisk'
         {
             Ensure           = 'Present'
             Name             = Split-Path -Path $Node.VirtualDiskName -Leaf
@@ -126,13 +126,13 @@ Configuration MSFT_SmbShare_Prerequisites_Config
             MaximumSizeBytes = 100
         }
 
-        MountImage 'MountSmbSHareVirtualDisk'
+        MountImage 'MountSmbShareVirtualDisk'
         {
             ImagePath   = $Node.VirtualDiskName
             DriveLetter = $Node.DriveLetter
         }
 
-        WaitForVolume 'WaitSmbSHareVirtualDisk'
+        WaitForVolume 'WaitSmbShareVirtualDisk'
         {
             DriveLetter      = $Node.DriveLetter
             RetryIntervalSec = 5
@@ -295,14 +295,14 @@ Configuration MSFT_SmbShare_Cleanup_Config
             DestinationPath = $Node.SharePath2
         }
 
-        MountImage 'DismountSmbSHareVirtualDisk'
+        MountImage 'DismountSmbShareVirtualDisk'
         {
             Ensure      = 'Absent'
             ImagePath   = $Node.VirtualDiskName
             DriveLetter = $Node.DriveLetter
         }
 
-        xVhd 'RemoveSmbSHareVirtualDisk'
+        xVhd 'RemoveSmbShareVirtualDisk'
         {
             Ensure           = 'Absent'
             Name             = Split-Path -Path $Node.VirtualDiskName -Leaf
