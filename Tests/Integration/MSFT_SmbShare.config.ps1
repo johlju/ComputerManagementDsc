@@ -13,6 +13,9 @@ if (Test-Path -Path $configFile)
 }
 else
 {
+    $lastDriveLetter = ((Get-Volume).DriveLetter | Sort-Object | Select-Object -Last 1)
+    $freeDriveLetter = [char](([int][char]$mockLastDrive) + 1)
+
     $ConfigurationData = @{
         AllNodes = @(
             @{
@@ -30,6 +33,9 @@ else
                 UserName3       = ('{0}\SmbUser3' -f $env:COMPUTERNAME)
                 UserName4       = ('{0}\SmbUser4' -f $env:COMPUTERNAME)
                 Password        = 'P@ssw0rd1'
+
+                VirtualDiskName = 'TestDrive:\SmbShareDisk.vhdx'
+                DriveLetter     = $freeDriveLetter
             }
         )
     }
@@ -43,6 +49,8 @@ else
 Configuration MSFT_SmbShare_Prerequisites_Config
 {
     Import-DscResource -ModuleName 'PSDscResources'
+    Import-DscResource -ModuleName 'xHyper-V'
+    Import-DscResource -ModuleName 'StorageDsc'
 
     node $AllNodes.NodeName
     {
@@ -106,6 +114,29 @@ Configuration MSFT_SmbShare_Prerequisites_Config
                 (Split-Path -Path $Node.UserName1 -Leaf),
                 (ConvertTo-SecureString -String $Node.Password -AsPlainText -Force)
             )
+        }
+
+        xVhd 'CreateSmbSHareVirtualDisk'
+        {
+            Ensure           = 'Present'
+            Name             = Split-Path -Path $Node.VirtualDiskName -Leaf
+            Path             = Split-Path -Path $Node.VirtualDiskName -Parent
+            Generation       = 'vhdx'
+            Type             = 'Dynamic'
+            MaximumSizeBytes = 100
+        }
+
+        MountImage 'MountSmbSHareVirtualDisk'
+        {
+            ImagePath   = $Node.VirtualDiskName
+            DriveLetter = $Node.DriveLetter
+        }
+
+        WaitForVolume 'WaitSmbSHareVirtualDisk'
+        {
+            DriveLetter      = $Node.DriveLetter
+            RetryIntervalSec = 5
+            RetryCount       = 10
         }
     }
 }
@@ -262,6 +293,20 @@ Configuration MSFT_SmbShare_Cleanup_Config
             Ensure          = 'Absent'
             Type            = 'Directory'
             DestinationPath = $Node.SharePath2
+        }
+
+        MountImage 'DismountSmbSHareVirtualDisk'
+        {
+            Ensure      = 'Absent'
+            ImagePath   = $Node.VirtualDiskName
+            DriveLetter = $Node.DriveLetter
+        }
+
+        xVhd 'RemoveSmbSHareVirtualDisk'
+        {
+            Ensure           = 'Absent'
+            Name             = Split-Path -Path $Node.VirtualDiskName -Leaf
+            Path             = Split-Path -Path $Node.VirtualDiskName -Parent
         }
     }
 }
