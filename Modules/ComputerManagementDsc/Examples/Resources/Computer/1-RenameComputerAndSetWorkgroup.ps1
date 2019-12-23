@@ -12,7 +12,7 @@ Configuration Example
         $NodeName = 'localhost'
     )
 
-    Import-DscResource -Module ComputerManagementDsc
+    Import-DscResource -Module 'ComputerManagementDsc'
 
     Node $NodeName
     {
