@@ -26,6 +26,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     in the module manifest in the source folder as the built module is
     automatically updated with this information by the pipeline - Fixes [Issue #396](https://github.com/dsccommunity/ComputerManagementDsc/issues/396).
   - Moved the build step of the pipeline to a Windows build worker when running in Azure DevOps.
+- PSResourceRepository
+  - The resource now supports read-only property `Reasons` that the compliant
+    part (audit via Azure Policy) of the Azure Automanage Machine Configuration
+    uses.
 
 ## [8.5.0] - 2021-09-13
 
