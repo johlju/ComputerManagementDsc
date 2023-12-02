@@ -2203,12 +2203,46 @@ try
                     $result.Enable | Should -Be $testParameters.Enable
                     $result.Ensure | Should -Be 'Present'
                     $result.StartTime | Should -Be (Get-Date -Date $startTimeString)
-                    $result.ScheduleType | Should -Be 'AtLogon'
+                    $result.ScheduleType | Should -BeExactly 'AtLogon'
                     $result.Delay | Should -Be $testParameters.Delay
                 }
 
                 It 'Should return true from the test method' {
                     Test-TargetResource @testParameters | Should -BeTrue
+                }
+            }
+
+            Context "When scheduling a task to trigger at user logon" {
+                It "Should correctly configure the task with 'AtLogon' ScheduleType and the specified user" {
+                    $testParameters = $getTargetResourceParameters + @{
+                        ScheduleType      = 'AtLogon'
+                        User              = 'MockedUser'
+                        ActionExecutable  = 'C:\windows\system32\WindowsPowerShell\v1.0\powershell.exe'
+                        LogonType         = 'Password'
+                    }
+
+                    Mock New-ScheduledTaskTrigger -MockWith {
+                        param($AtLogon, $User)
+                        if ($AtLogon -eq $true -and $User -eq 'MockedUser') {
+                            # Create and return a mock CIM instance object here
+                            $CimInstanceProperties = @{
+                                AtLogon = $true
+                                User    = 'MockedUser'
+                            }
+                            $CimInstanceObject = New-Object -TypeName Microsoft.Management.Infrastructure.CimInstance -Property $CimInstanceProperties
+                            return $CimInstanceObject
+                        } else {
+                            return $null  # Or another appropriate value if the condition isn't met
+                        }
+                    }
+                    Mock New-ScheduledTask -MockWith {}
+
+                    Set-TargetResource @testParameters
+
+                    Assert-MockCalled -CommandName New-ScheduledTaskTrigger -ParameterFilter {
+                        $AtLogon -eq $true -and $User -eq 'MockedUser'
+                    } -Exactly -Times 1 -Scope It
+                    Assert-MockCalled -CommandName New-ScheduledTask -Exactly -Times 1 -Scope It
                 }
             }
 
