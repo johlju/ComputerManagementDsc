@@ -2224,11 +2224,15 @@ try
                     Mock -CommandName New-ScheduledTaskTrigger -MockWith {
                         $cimInstance = New-CIMInstance -ClassName 'MSFT_TaskLogonTrigger' -Namespace 'root\Microsoft\Windows\TaskScheduler' -Property @{
                             # Fill the CIM instance with the properties we expect to be used by the resource.
-                            PSTypeName = 'Microsoft.Management.Infrastructure.CimInstance#MSFT_TaskTrigger'
                             UserId = $testParameters.User
                             Delay  = ''
+                            StartBoundary = '2018-09-27T18:45:08+02:00'
                         } -ClientOnly
 
+                        <#
+                            Must add the TypeName property to the CIM instance for the array .PSObject.PSTypeNames
+                            to have the correct name for it to be recognized by the New-ScheduledTask command.
+                        #>
                         $cimInstance | Add-Member -TypeName 'Microsoft.Management.Infrastructure.CimInstance#MSFT_TaskTrigger'
 
                         return $cimInstance
@@ -2243,6 +2247,7 @@ try
                     Assert-MockCalled -CommandName New-ScheduledTaskTrigger -ParameterFilter {
                         $AtLogon -eq $true -and $User -eq 'MockedUser'
                     } -Exactly -Times 1 -Scope It
+
                     Assert-MockCalled -CommandName New-ScheduledTask -Exactly -Times 1 -Scope It
                 }
             }
