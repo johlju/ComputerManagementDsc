@@ -2225,7 +2225,7 @@ try
                         return (
                             New-CIMInstance -ClassName 'MSFT_TaskLogonTrigger' -Namespace 'root\Microsoft\Windows\TaskScheduler' -Property @{
                                 UserId = $testParameters.User
-                                Delay  = 0
+                                Delay  = ''
                             } -ClientOnly
                         )
                     }
