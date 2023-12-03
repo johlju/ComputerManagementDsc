@@ -2226,7 +2226,6 @@ try
                             # Fill the CIM instance with the properties we expect to be used by the resource.
                             UserId = $testParameters.User
                             Delay  = ''
-                            StartBoundary = '2018-09-27T18:45:08+02:00'
                         } -ClientOnly
 
                         <#
@@ -2238,7 +2237,20 @@ try
                         return $cimInstance
                     }
 
-                    Mock -CommandName New-ScheduledTask
+                    Mock -CommandName New-ScheduledTask -MockWith {
+                        <#
+                            Mock an object with properties that are used by the resource
+                            for the newly created scheduled task.
+                        #>
+                        return [PSCustomObject]@{
+                            Triggers = @(
+                                @{
+                                    StartBoundary = '2018-09-27T18:45:08+02:00'
+                                }
+                            )
+                        }
+                    }
+
                     Mock -CommandName Register-ScheduledTask
 
                     Set-TargetResource @testParameters
