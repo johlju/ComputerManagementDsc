@@ -2239,6 +2239,7 @@ try
                     }
 
                     Mock -CommandName New-ScheduledTask
+                    Mock -CommandName Register-ScheduledTask
                     #Mock -CommandName New-ScheduledTaskSettingsSet
                     #Mock -CommandName New-ScheduledTaskPrincipal
 
