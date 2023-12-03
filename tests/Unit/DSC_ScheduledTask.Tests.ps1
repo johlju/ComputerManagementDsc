@@ -2224,6 +2224,7 @@ try
                     Mock -CommandName New-ScheduledTaskTrigger -MockWith {
                         return (
                             New-CIMInstance -ClassName 'MSFT_TaskLogonTrigger' -Namespace 'root\Microsoft\Windows\TaskScheduler' -Property @{
+                                # Fill the CIM instance with the properties we expect to be used by the resource.
                                 UserId = $testParameters.User
                                 Delay  = ''
                             } -ClientOnly
@@ -2231,8 +2232,8 @@ try
                     }
 
                     Mock -CommandName New-ScheduledTask
-                    Mock -CommandName New-ScheduledTaskSettingsSet
-                    Mock -CommandName New-ScheduledTaskPrincipal
+                    #Mock -CommandName New-ScheduledTaskSettingsSet
+                    #Mock -CommandName New-ScheduledTaskPrincipal
 
                     Set-TargetResource @testParameters
 
