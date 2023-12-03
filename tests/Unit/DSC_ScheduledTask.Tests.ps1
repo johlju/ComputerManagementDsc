@@ -2213,14 +2213,7 @@ try
             }
 
             Context "When scheduling a task to trigger at user logon" {
-                It "Should correctly configure the task with 'AtLogon' ScheduleType and the specified user" {
-                    $testParameters = $getTargetResourceParameters + @{
-                        ScheduleType      = 'AtLogon'
-                        User              = 'MockedUser'
-                        ActionExecutable  = 'C:\windows\system32\WindowsPowerShell\v1.0\powershell.exe'
-                        LogonType         = 'Password'
-                    }
-
+                BeforeAll {
                     Mock -CommandName New-ScheduledTaskTrigger -MockWith {
                         $cimInstance = New-CIMInstance -ClassName 'MSFT_TaskLogonTrigger' -Namespace 'root\Microsoft\Windows\TaskScheduler' -Property @{
                             # Fill the CIM instance with the properties we expect to be used by the resource.
@@ -2242,7 +2235,7 @@ try
                             Mock an object with properties that are used by the resource
                             for the newly created scheduled task.
                         #>
-                        return [PSCustomObject]@{
+                        return [PSCustomObject] @{
                             Triggers = @(
                                 @{
                                     StartBoundary = '2018-09-27T18:45:08+02:00'
@@ -2252,6 +2245,15 @@ try
                     }
 
                     Mock -CommandName Register-ScheduledTask
+                }
+
+                It "Should correctly configure the task with 'AtLogon' ScheduleType and the specified user" {
+                    $testParameters = $getTargetResourceParameters + @{
+                        ScheduleType      = 'AtLogon'
+                        User              = 'MockedUser'
+                        ActionExecutable  = 'C:\windows\system32\WindowsPowerShell\v1.0\powershell.exe'
+                        LogonType         = 'Password'
+                    }
 
                     Set-TargetResource @testParameters
 
