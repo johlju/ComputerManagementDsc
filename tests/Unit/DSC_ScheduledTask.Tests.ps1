@@ -2221,8 +2221,17 @@ try
                         LogonType         = 'Password'
                     }
 
-                    Mock -CommandName New-ScheduledTaskTrigger
+                    Mock -CommandName New-ScheduledTaskTrigger -MockWith {
+                        return (
+                            New-CIMInstance -ClassName 'MSFT_TaskLogonTrigger' -Namespace 'root\Microsoft\Windows\TaskScheduler' -Property @{
+                                UserId = $testParameters.User
+                            } -ClientOnly
+                        )
+                    }
+
                     Mock -CommandName New-ScheduledTask
+                    Mock -CommandName New-ScheduledTaskSettingsSet
+                    Mock -CommandName New-ScheduledTaskPrincipal
 
                     Set-TargetResource @testParameters
 
