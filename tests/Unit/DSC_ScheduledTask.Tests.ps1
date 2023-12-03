@@ -2221,21 +2221,8 @@ try
                         LogonType         = 'Password'
                     }
 
-                    Mock New-ScheduledTaskTrigger -MockWith {
-                        param($AtLogon, $User)
-                        if ($AtLogon -eq $true -and $User -eq 'MockedUser') {
-                            # Create and return a mock CIM instance object here
-                            $CimInstanceProperties = @{
-                                AtLogon = $true
-                                User    = 'MockedUser'
-                            }
-                            $CimInstanceObject = New-Object -TypeName Microsoft.Management.Infrastructure.CimInstance -Property $CimInstanceProperties
-                            return $CimInstanceObject
-                        } else {
-                            return $null  # Or another appropriate value if the condition isn't met
-                        }
-                    }
-                    Mock New-ScheduledTask -MockWith {}
+                    Mock -CommandName New-ScheduledTaskTrigger
+                    Mock -CommandName New-ScheduledTask
 
                     Set-TargetResource @testParameters
 
