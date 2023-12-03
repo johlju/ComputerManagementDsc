@@ -2225,6 +2225,7 @@ try
                         return (
                             New-CIMInstance -ClassName 'MSFT_TaskLogonTrigger' -Namespace 'root\Microsoft\Windows\TaskScheduler' -Property @{
                                 # Fill the CIM instance with the properties we expect to be used by the resource.
+                                PSTypeName = 'Microsoft.Management.Infrastructure.CimInstance#MSFT_TaskTrigger'
                                 UserId = $testParameters.User
                                 Delay  = ''
                             } -ClientOnly
